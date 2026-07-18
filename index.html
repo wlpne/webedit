@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Material You Markdown Editor</title>
+    <!-- MarkedJS for Fast Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Material Design 3 Baseline Tokens */
+        body.light.purple {
+            --bg: #FEF7FF; --on-bg: #1D1B20;
+            --surface: #F3EDF7; --on-surface: #1D1B20;
+            --primary: #6750A4; --on-primary: #FFFFFF;
+            --sec-container: #E8DEF8; --on-sec-container: #1D192B;
+            --outline: #79747E; --error: #B3261E;
+        }
+        body.dark.purple {
+            --bg: #141218; --on-bg: #E6E0E9;
+            --surface: #211F26; --on-surface: #E6E0E9;
+            --primary: #D0BCFF; --on-primary: #381E72;
+            --sec-container: #4A4458; --on-sec-container: #E8DEF8;
+            --outline: #938F99; --error: #F2B8B5;
+        }
+        body.light.blue {
+            --bg: #FDFBFF; --on-bg: #1A1C1E;
+            --surface: #DFE2EB; --on-surface: #1A1C1E;
+            --primary: #0061A4; --on-primary: #FFFFFF;
+            --sec-container: #D1E4FF; --on-sec-container: #001D36;
+            --outline: #73777F; --error: #B3261E;
+        }
+        body.dark.blue {
+            --bg: #1A1C1E; --on-bg: #E2E2E6;
+            --surface: #43474E; --on-surface: #E2E2E6;
+            --primary: #9ECAFF; --on-primary: #003258;
+            --sec-container: #00497D; --on-sec-container: #D1E4FF;
+            --outline: #8D9199; --error: #F2B8B5;
+        }
+        body.light.green {
+            --bg: #FCFDF6; --on-bg: #1A1C19;
+            --surface: #DFE4D8; --on-surface: #1A1C19;
+            --primary: #386A20; --on-primary: #FFFFFF;
+            --sec-container: #B8F397; --on-sec-container: #042100;
+            --outline: #73796E; --error: #B3261E;
+        }
+        body.dark.green {
+            --bg: #1A1C19; --on-bg: #E2E3DD;
+            --surface: #43483E; --on-surface: #E2E3DD;
+            --primary: #9CD67D; --on-primary: #0C3900;
+            --sec-container: #205107; --on-sec-container: #B8F397;
+            --outline: #8D9287; --error: #F2B8B5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--on-bg);
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Top App Bar */
+        .top-app-bar {
+            background-color: var(--bg);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .title-area {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--primary);
+        }
+
+        .stats {
+            font-size: 0.75rem;
+            color: var(--outline);
+        }
+
+        .customizer {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .swatch-purple { background-color: #6750A4; }
+        .swatch-blue { background-color: #0061A4; }
+        .swatch-green { background-color: #386A20; }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--on-bg);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* MD3 Segmented View Tabs (Edit vs Preview) */
+        .view-tabs {
+            display: flex;
+            margin: 0 16px 8px 16px;
+            background-color: var(--surface);
+            border: 1px solid var(--outline);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--on-bg);
+            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tab-btn.active {
+            background-color: var(--sec-container);
+            color: var(--on-sec-container);
+            font-weight: 600;
+        }
+
+        /* Find/Replace Panel */
+        .control-panel {
+            background-color: var(--surface);
+            padding: 16px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 0 8px 8px 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background-color: var(--bg);
+            color: var(--on-bg);
+            border: 1px solid var(--outline);
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            border-width: 2px;
+            padding: 11px 15px;
+        }
+
+        button.md-btn {
+            background-color: var(--sec-container);
+            color: var(--on-sec-container);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        button.md-btn.filled {
+            background-color: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .options-row {
+            display: flex;
+            gap: 16px;
+            font-size: 0.875rem;
+            align-items: center;
+        }
+
+        .status-msg {
+            margin-left: auto;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* Viewport Container */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        textarea, .preview-pane {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            border: none;
+            color: var(--on-bg);
+            padding: 16px 24px;
+            font-size: 16px;
+            line-height: 1.6;
+            outline: none;
+            overflow-y: auto;
+        }
+
+        textarea {
+            font-family: 'Courier New', Courier, monospace;
+            resize: none;
+        }
+
+        /* Rich text markdown styling rules */
+        .preview-pane {
+            display: none;
+        }
+        .preview-pane h1, .preview-pane h2, .preview-pane h3 {
+            color: var(--primary);
+            margin-bottom: 12px;
+            margin-top: 16px;
+            font-weight: 500;
+        }
+        .preview-pane h1 { font-size: 1.6rem; border-bottom: 1px solid var(--outline); padding-bottom: 6px; }
+        .preview-pane h2 { font-size: 1.3rem; }
+        .preview-pane p { margin-bottom: 12px; }
+        .preview-pane code { background-color: var(--surface); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        .preview-pane pre { background-color: var(--surface); padding: 12px; border-radius: 8px; overflow-x: auto; margin-bottom: 12px; }
+        .preview-pane a { color: var(--primary); text-decoration: underline; }
+        .preview-pane ul, .preview-pane ol { margin-left: 20px; margin-bottom: 12px; }
+
+        /* Bottom Control Elements */
+        .mobile-action-bar {
+            background-color: var(--surface);
+            padding: 12px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .mobile-action-bar::-webkit-scrollbar { display: none; }
+
+        .mobile-action-bar button {
+            flex: 0 0 auto;
+            padding: 8px 16px;
+            background-color: var(--bg);
+            color: var(--on-bg);
+            border: 1px solid var(--outline);
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        /* Footer Element */
+        footer {
+            background-color: var(--surface);
+            text-align: center;
+            padding: 8px 16px 16px 16px;
+            font-size: 0.75rem;
+            color: var(--outline);
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="dark purple" id="bodyElement">
+
+    <div class="top-app-bar">
+        <div class="title-area">
+            <h1>io.editor</h1>
+            <div class="stats" id="stats">L: 1 | W: 0 | C: 0</div>
+        </div>
+        
+        <div class="customizer">
+            <button class="color-swatch swatch-purple" onclick="setColor('purple')"></button>
+            <button class="color-swatch swatch-blue" onclick="setColor('blue')"></button>
+            <button class="color-swatch swatch-green" onclick="setColor('green')"></button>
+            <button class="theme-toggle" onclick="toggleMode()">🌓</button>
+        </div>
+    </div>
+
+    <!-- Mode Selector Tab Bar -->
+    <div class="view-tabs">
+        <button class="tab-btn active" id="editTab" onclick="switchView('edit')">Editor</button>
+        <button class="tab-btn" id="previewTab" onclick="switchView('preview')">Preview</button>
+    </div>
+
+    <div class="control-panel" id="controlPanel">
+        <div class="input-row">
+            <input type="text" id="findInput" placeholder="Find in file...">
+            <button class="md-btn" onclick="findNext()">Find</button>
+        </div>
+
+        <div class="input-row">
+            <input type="text" id="replaceInput" placeholder="Replace with...">
+            <button class="md-btn" onclick="replaceCurrent()">Replace</button>
+            <button class="md-btn filled" onclick="replaceAll()">All</button>
+        </div>
+
+        <div class="options-row">
+            <label><input type="checkbox" id="matchCase"> Match Case</label>
+            <label><input type="checkbox" id="useRegex"> Regex</label>
+            <div class="status-msg" id="statusMsg"></div>
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <textarea id="editor" placeholder="Start typing raw Markdown here..." spellcheck="false"></textarea>
+        <div id="preview" class="preview-pane"></div>
+    </div>
+
+    <div class="mobile-action-bar">
+        <button onclick="insertTab()">[Tab]</button>
+        <button onclick="focusInput('findInput')">Find</button>
+        <button onclick="focusInput('replaceInput')">Replace</button>
+        <button onclick="selectAllText()">Select All</button>
+    </div>
+
+    <footer>
+        vibecoded by <a href="https://github.com/wlpne/" target="_blank">wlpne</a> using <a href="https://gemini.google.com/" target="_blank">Gemini</a>
+    </footer>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        const bodyEl = document.getElementById('bodyElement');
+        const findInput = document.getElementById('findInput');
+        const replaceInput = document.getElementById('replaceInput');
+        const matchCaseCb = document.getElementById('matchCase');
+        const useRegexCb = document.getElementById('useRegex');
+        const statsPanel = document.getElementById('stats');
+        const statusMsg = document.getElementById('statusMsg');
+        const controlPanel = document.getElementById('controlPanel');
+
+        let lastSearchIndex = 0;
+        let currentMode = 'dark';
+        let currentColor = 'purple';
+
+        // View Toggling logic (Markdown Compilation)
+        function switchView(mode) {
+            document.getElementById('editTab').classList.toggle('active', mode === 'edit');
+            document.getElementById('previewTab').classList.toggle('active', mode === 'preview');
+
+            if (mode === 'preview') {
+                // Update preview contents using MarkedJS
+                preview.innerHTML = marked.parse(editor.value || '*Nothing to preview yet.*');
+                editor.style.display = 'none';
+                preview.style.display = 'block';
+                controlPanel.style.display = 'none'; // Hide edit tools on preview pane
+            } else {
+                editor.style.display = 'block';
+                preview.style.display = 'none';
+                controlPanel.style.display = 'flex';
+                editor.focus();
+            }
+        }
+
+        // Theming Functions
+        function toggleMode() {
+            bodyEl.classList.remove(currentMode);
+            currentMode = currentMode === 'dark' ? 'light' : 'dark';
+            bodyEl.classList.add(currentMode);
+        }
+
+        function setColor(color) {
+            bodyEl.classList.remove(currentColor);
+            currentColor = color;
+            bodyEl.classList.add(currentColor);
+        }
+
+        // Editor Functions
+        function updateStats() {
+            const text = editor.value;
+            const lines = text === "" ? 1 : text.split('\n').length;
+            const words = text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
+            const chars = text.length;
+            statsPanel.textContent = `L: ${lines} | W: ${words} | C: ${chars}`;
+        }
+        editor.addEventListener('input', updateStats);
+
+        function showStatus(msg, isError = false) {
+            statusMsg.textContent = msg;
+            statusMsg.style.color = isError ? "var(--error)" : "var(--primary)";
+            setTimeout(() => { statusMsg.textContent = "" }, 3000);
+        }
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        document.documentElement.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                const isEdit = editor.style.display !== 'none';
+                switchView(isEdit ? 'preview' : 'edit');
+            }
+        });
+
+        function getSearchRegex(global = false) {
+            let searchVal = findInput.value;
+            if (!searchVal) return null;
+            if (!useRegexCb.checked) searchVal = escapeRegExp(searchVal);
+            
+            let flags = global ? 'g' : '';
+            if (!matchCaseCb.checked) flags += 'i';
+
+            try {
+                return new RegExp(searchVal, flags);
+            } catch (e) {
+                showStatus("Invalid Regex", true);
+                return null;
+            }
+        }
+
+        function findNext() {
+            const text = editor.value;
+            const query = findInput.value;
+            if (!query) return;
+
+            let searchRegex = getSearchRegex();
+            if (!searchRegex) return;
+
+            const substring = text.substring(lastSearchIndex);
+            let match = substring.match(searchRegex);
+
+            if (match) {
+                const matchIndex = lastSearchIndex + match.index;
+                editor.focus();
+                editor.setSelectionRange(matchIndex, matchIndex + match[0].length);
+                lastSearchIndex = matchIndex + match[0].length;
+            } else {
+                const retryMatch = text.match(searchRegex);
+                if (retryMatch) {
+                    editor.focus();
+                    editor.setSelectionRange(retryMatch.index, retryMatch.index + retryMatch[0].length);
+                    lastSearchIndex = retryMatch.index + retryMatch[0].length;
+                    showStatus("Wrapped to top");
+                } else {
+                    showStatus("No matches found");
+                }
+            }
+        }
+
+        function replaceCurrent() {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            if (start === end) {
+                findNext();
+                return;
+            }
+            const text = editor.value;
+            const replacement = replaceInput.value;
+            editor.value = text.substring(0, start) + replacement + text.substring(end);
+            editor.setSelectionRange(start, start + replacement.length);
+            lastSearchIndex = start + replacement.length;
+            updateStats();
+        }
+
+        function replaceAll() {
+            const text = editor.value;
+            const regex = getSearchRegex(true);
+            if (!regex) return;
+
+            const matches = text.match(regex);
+            if (!matches) {
+                showStatus("No matches");
+                return;
+            }
+            editor.value = text.replace(regex, replaceInput.value);
+            showStatus(`Replaced ${matches.length}`);
+            updateStats();
+            lastSearchIndex = 0;
+        }
+
+        function insertTab() {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+            editor.focus();
+            editor.selectionStart = editor.selectionEnd = start + 4;
+            updateStats();
+        }
+
+        function focusInput(id) {
+            switchView('edit'); // Force editor view open if trying to search
+            const el = document.getElementById(id);
+            el.focus();
+            el.select();
+        }
+
+        function selectAllText() {
+            switchView('edit');
+            editor.focus();
+            editor.setSelectionRange(0, editor.value.length);
+        }
+    </script>
+</body>
+              </html>
+              
