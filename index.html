@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebEdit</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Code&display=swap');
+        
+        /* Explicitly load Google Sans with Cyrillic support */
+        @font-face {
+            font-family: 'Google Sans';
+            font-style: normal;
+            font-weight: 400;
+            src: local('Google Sans'), url(https://fonts.gstatic.com/s/googlesans/v29/4UaGrENHsxJlGDuGo1OIlL3Owp4.woff2) format('woff2');
+            unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        @font-face {
+            font-family: 'Google Sans';
+            font-style: normal;
+            font-weight: 400;
+            src: local('Google Sans'), url(https://fonts.gstatic.com/s/googlesans/v29/4UaGrENHsxJlGDuGo1OIlL3Kwp5MKg.woff2) format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+        @font-face {
+            font-family: 'Google Sans';
+            font-style: normal;
+            font-weight: 500;
+            src: local('Google Sans Medium'), url(https://fonts.gstatic.com/s/googlesans/v29/4UabrENHsxJlGDuGo1OIlLU94YtzCwZ-.woff2) format('woff2');
+            unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+        }
+        @font-face {
+            font-family: 'Google Sans';
+            font-style: normal;
+            font-weight: 500;
+            src: local('Google Sans Medium'), url(https://fonts.gstatic.com/s/googlesans/v29/4UabrENHsxJlGDuGo1OIlLU94Yt8Cw.woff2) format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+        /* Dynamic Colors */
+        body.light.purple { --bg: #FEF7FF; --on-bg: #250E44; --surface: #F3EDF7; --primary: #6A538C; --on-primary: #FFFFFF; --sec-container: #D6BBFB; --on-sec-container: #250E44; }
+        body.dark.purple { --bg: #141218; --on-bg: #EDDCFF; --surface: #211F26; --primary: #D6BBFB; --on-primary: #250E44; --sec-container: #523C73; --on-sec-container: #F8EDFF; }
+        
+        body.light.blue { --bg: #FDFBFF; --on-bg: #1A1C1E; --surface: #DFE2EB; --primary: #0061A4; --on-primary: #FFFFFF; --sec-container: #D1E4FF; --on-sec-container: #001D36; }
+        body.dark.blue { --bg: #1A1C1E; --on-bg: #E2E2E6; --surface: #43474E; --primary: #9ECAFF; --on-primary: #003258; --sec-container: #00497D; --on-sec-container: #D1E4FF; }
+
+        body.light.green { --bg: #FCFDF6; --on-bg: #1A1C19; --surface: #DFE4D8; --primary: #386A20; --on-primary: #FFFFFF; --sec-container: #B8F397; --on-sec-container: #042100; }
+        body.dark.green { --bg: #1A1C19; --on-bg: #E2E3DD; --surface: #43483E; --primary: #9CD67D; --on-primary: #0C3800; --sec-container: #205107; --on-sec-container: #B8F397; }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Google Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--on-bg); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; }
+        
+        button, input, select { font-family: inherit; } /* Forces buttons to avoid Android's Roboto Flex default */
+
+        .top-app-bar { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo-link img { height: 32px; display: block; }
+        .controls-right { display: flex; gap: 8px; align-items: center; }
+        .controls-left { display: flex; gap: 12px; align-items: center; }
+        
+        .action-btn { background: var(--surface); border: none; padding: 8px; border-radius: 12px; cursor: pointer; color: var(--on-bg); display: flex; align-items: center; }
+        
+        .custom-dropdown { position: relative; display: inline-block; }
+        .dropdown-trigger { background: var(--surface); color: var(--on-bg); border: none; padding: 8px 8px 8px 12px; border-radius: 12px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 2px; font-weight: 500; }
+        .dropdown-menu { position: absolute; top: calc(100% + 4px); right: 0; background: var(--surface); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; flex-direction: column; min-width: 120px; z-index: 100; overflow: hidden; padding: 8px 0; }
+        .dropdown-menu.show { display: flex; }
+        #colorMenu { min-width: unset; width: 64px; }
+        .dropdown-item { background: transparent; color: var(--on-bg); border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .dropdown-item:hover, .dropdown-item:active { background: var(--sec-container); color: var(--on-sec-container); }
+        .flag-icon, .color-icon { width: 20px; height: 20px; display: block; object-fit: contain; }
+        .flag-icon { border-radius: 50%; object-fit: cover; }
+
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; display: none; opacity: 0; transition: opacity 0.3s; }
+        .drawer-overlay.show { display: block; opacity: 1; }
+        .drawer { position: fixed; top: 0; left: -320px; width: 300px; max-width: 85vw; height: 100dvh; background: var(--bg); z-index: 999; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; border-radius: 0 16px 16px 0; box-shadow: 2px 0 12px rgba(0,0,0,0.2); }
+        .drawer.show { left: 0; }
+        .drawer-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface); }
+        .drawer-title { font-weight: 500; font-size: 1.1rem; color: var(--on-bg); }
+        .file-list { flex: 1; overflow-y: auto; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+        .file-item { padding: 12px 16px; border-radius: 28px; cursor: pointer; user-select: none; font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--on-bg); display: flex; align-items: center; gap: 12px; }
+        .file-item .material-symbols-outlined { font-size: 20px; }
+        .file-item:hover { background: var(--surface); }
+        .file-item.active { background: var(--sec-container); color: var(--on-sec-container); }
+
+        .context-menu { position: fixed; background: var(--surface); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; flex-direction: column; min-width: 180px; z-index: 1001; padding: 8px 0; }
+        .context-item { background: transparent; color: var(--on-bg); border: none; padding: 12px 16px; text-align: left; cursor: pointer; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .context-item:hover { background: var(--sec-container); color: var(--on-sec-container); }
+        .context-item.delete { color: #CF6679; }
+        body.light .context-item.delete { color: #B3261E; }
+
+        .view-tabs { display: flex; margin: 0 16px 8px 16px; background-color: var(--surface); border-radius: 16px; overflow: hidden; }
+        .tab-btn { flex: 1; background: none; border: none; color: var(--on-bg); padding: 10px; font-weight: 500; cursor: pointer; }
+        .tab-btn.active { background-color: var(--sec-container); color: var(--on-sec-container); }
+
+        .editor-container { flex: 1; display: flex; position: relative; overflow: hidden; }
+        textarea { width: 100%; height: 100%; background: transparent; border: none; color: var(--on-bg); padding: 16px; font-family: 'Google Sans Code', monospace; resize: none; outline: none; }
+        .preview-pane { display: none; width: 100%; height: 100%; padding: 16px; overflow-y: auto; }
+
+        .toolbar { padding: 8px; display: flex; gap: 8px; justify-content: center; background: var(--surface); transition: 0.3s; }
+        .md-btn { background: var(--sec-container); color: var(--on-sec-container); border: none; padding: 8px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; transition: 0.3s; }
+
+        .fab { position: fixed; bottom: 24px; right: 24px; background: var(--primary); color: var(--on-primary); width: 56px; height: 56px; border-radius: 16px; border: none; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.3s; }
+        .menu { position: fixed; bottom: 90px; right: 24px; background: var(--surface); padding: 8px; border-radius: 20px; display: none; flex-direction: column; gap: 8px; z-index: 10; }
+        .menu-item { background: var(--sec-container); color: var(--on-sec-container); border: none; padding: 12px 24px; border-radius: 16px; cursor: pointer; text-align: left; font-weight: 500; }
+    </style>
+</head>
+<body class="dark purple">
+
+    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+
+    <div class="drawer" id="navDrawer">
+        <div class="drawer-header">
+            <button class="action-btn" onclick="createNewFile()"><span class="material-symbols-outlined">add</span></button>
+            <div class="drawer-title" id="drawerTitle">Files</div>
+            <button class="action-btn" onclick="toggleDrawer()"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="file-list" id="fileList"></div>
+    </div>
+
+    <div class="context-menu" id="fileContextMenu">
+        <button class="context-item" onclick="renameFile()"><span class="material-symbols-outlined">edit</span> Rename</button>
+        <button class="context-item" onclick="moveFileTop()"><span class="material-symbols-outlined">vertical_align_top</span> Move on Top</button>
+        <button class="context-item delete" onclick="deleteFile()"><span class="material-symbols-outlined">delete</span> Delete</button>
+    </div>
+
+    <div class="top-app-bar">
+        <div class="controls-left">
+            <button class="action-btn" onclick="toggleDrawer()"><span class="material-symbols-outlined">menu</span></button>
+            <a href="https://wlpne.github.io/webedit" class="logo-link"><img id="logoImg" src="WebEditDark.png" alt="WebEdit"></a>
+        </div>
+        <div class="controls-right">
+            
+            <div class="custom-dropdown">
+                <button class="dropdown-trigger" onclick="toggleCustomMenu('colorMenu', event)">
+                    <span id="colorLabel"><img src="https://raw.githubusercontent.com/wlpne/webedit/main/PurpleMY.png" class="color-icon" alt="Purple"></span>
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_drop_down</span>
+                </button>
+                <div class="dropdown-menu" id="colorMenu">
+                    <button class="dropdown-item" onclick="selectColor('purple')">
+                        <img src="https://raw.githubusercontent.com/wlpne/webedit/main/PurpleMY.png" class="color-icon" alt="Purple">
+                    </button>
+                    <button class="dropdown-item" onclick="selectColor('blue')">
+                        <img src="https://raw.githubusercontent.com/wlpne/webedit/main/BlueMY.png" class="color-icon" alt="Blue">
+                    </button>
+                    <button class="dropdown-item" onclick="selectColor('green')">
+                        <img src="https://raw.githubusercontent.com/wlpne/webedit/main/GreenMY.png" class="color-icon" alt="Green">
+                    </button>
+                </div>
+            </div>
+
+            <div class="custom-dropdown">
+                <button class="dropdown-trigger" onclick="toggleCustomMenu('langMenu', event)">
+                    <span id="langLabel"><img src="https://hatscripts.github.io/circle-flags/flags/gb.svg" class="flag-icon" alt="EN"></span>
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_drop_down</span>
+                </button>
+                <div class="dropdown-menu" id="langMenu">
+                    <button class="dropdown-item" onclick="selectLang('en')">
+                        <img src="https://hatscripts.github.io/circle-flags/flags/gb.svg" class="flag-icon" alt="EN"> EN
+                    </button>
+                    <button class="dropdown-item" onclick="selectLang('ru')">
+                        <img src="https://hatscripts.github.io/circle-flags/flags/ru.svg" class="flag-icon" alt="RU"> RU
+                    </button>
+                </div>
+            </div>
+
+            <button class="action-btn" onclick="toggleMode()"><span id="modeIcon" class="material-symbols-outlined">light_mode</span></button>
+        </div>
+    </div>
+
+    <div class="view-tabs">
+        <button class="tab-btn active" id="editTab" onclick="switchView('edit')">Editor</button>
+        <button class="tab-btn" id="previewTab" onclick="switchView('preview')">Preview</button>
+    </div>
+
+    <div class="editor-container">
+        <textarea id="editor" placeholder="Start typing..."></textarea>
+        <div id="preview" class="preview-pane"></div>
+    </div>
+
+    <div class="toolbar">
+        <button class="md-btn" onclick="insert('**', '**')"><span class="material-symbols-outlined">format_bold</span></button>
+        <button class="md-btn" onclick="insert('*', '*')"><span class="material-symbols-outlined">format_italic</span></button>
+        <button class="md-btn" onclick="insert('(', ')[]')"><span class="material-symbols-outlined">link</span></button>
+        <button class="md-btn" onclick="insertNumberedList()"><span class="material-symbols-outlined">format_list_numbered</span></button>
+    </div>
+
+    <button class="fab" onclick="toggleMenu()"><span class="material-symbols-outlined">save</span></button>
+    <div class="menu" id="saveMenu">
+        <button class="menu-item" onclick="saveFile('txt')">Save as TXT</button>
+        <button class="menu-item" onclick="saveFile('md')">Save as MD</button>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('preview');
+        
+        let currentLang = 'en';
+
+        const langData = {
+            en: { 
+                edit: "Editor", prev: "Preview", placeholder: "Start typing...", files: "Files", 
+                flag: "https://hatscripts.github.io/circle-flags/flags/gb.svg"
+            },
+            ru: { 
+                edit: "Редактор", prev: "Предпросмотр", placeholder: "Начните вводить...", files: "Файлы", 
+                flag: "https://hatscripts.github.io/circle-flags/flags/ru.svg"
+            }
+        };
+
+        let files = [{ id: Date.now(), name: 'Unnamed', content: '' }];
+        let currentFileId = files[0].id;
+        let targetContextId = null;
+
+        function getUniqueName() {
+            let baseName = "Unnamed";
+            let name = baseName;
+            let counter = 1;
+            while (files.some(f => f.name === name)) {
+                name = `${baseName} ${counter}`;
+                counter++;
+            }
+            return name;
+        }
+
+        function createNewFile() {
+            const newFile = { id: Date.now(), name: getUniqueName(), content: '' };
+            files.unshift(newFile);
+            switchFile(newFile.id);
+        }
+
+        function switchFile(id) {
+            currentFileId = id;
+            const file = files.find(f => f.id === id);
+            editor.value = file.content;
+            if (document.getElementById('previewTab').classList.contains('active')) {
+                preview.innerHTML = marked.parse(editor.value);
+            }
+            renderFiles();
+        }
+
+        function renderFiles() {
+            const list = document.getElementById('fileList');
+            list.innerHTML = '';
+            files.forEach(f => {
+                const item = document.createElement('div');
+                item.className = `file-item ${f.id === currentFileId ? 'active' : ''}`;
+                item.innerHTML = `<span class="material-symbols-outlined">description</span> ${f.name}`;
+                
+                item.onclick = () => switchFile(f.id);
+
+                item.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    showContextMenu(e, f.id);
+                };
+
+                let pressTimer;
+                item.ontouchstart = (e) => {
+                    pressTimer = setTimeout(() => {
+                        const touch = e.touches[0];
+                        showContextMenu({ clientX: touch.clientX, clientY: touch.clientY }, f.id);
+                    }, 600);
+                };
+                item.ontouchend = () => clearTimeout(pressTimer);
+                item.ontouchmove = () => clearTimeout(pressTimer);
+
+                list.appendChild(item);
+            });
+        }
+
+        editor.addEventListener('input', () => {
+            const file = files.find(f => f.id === currentFileId);
+            if (file) file.content = editor.value;
+        });
+
+        renderFiles();
+
+        function toggleDrawer() {
+            const drawer = document.getElementById('navDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            drawer.classList.toggle('show');
+            if (drawer.classList.contains('show')) {
+                overlay.style.display = 'block';
+                setTimeout(() => overlay.classList.add('show'), 10);
+            } else {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.style.display = 'none', 300);
+            }
+        }
+
+        function showContextMenu(e, id) {
+            targetContextId = id;
+            const menu = document.getElementById('fileContextMenu');
+            menu.style.display = 'flex';
+            
+            let x = e.clientX;
+            let y = e.clientY;
+            if (x + 180 > window.innerWidth) x = window.innerWidth - 190;
+            if (y + 150 > window.innerHeight) y = window.innerHeight - 160;
+            
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+        }
+
+        function renameFile() {
+            const file = files.find(f => f.id === targetContextId);
+            const newName = prompt("Enter new name:", file.name);
+            if (newName && newName.trim() !== '') {
+                file.name = newName.trim();
+                renderFiles();
+            }
+            closeContextMenu();
+        }
+
+        function moveFileTop() {
+            const idx = files.findIndex(f => f.id === targetContextId);
+            if (idx > 0) {
+                const [file] = files.splice(idx, 1);
+                files.unshift(file);
+                renderFiles();
+            }
+            closeContextMenu();
+        }
+
+        function deleteFile() {
+            if (files.length === 1) {
+                files[0].name = getUniqueName();
+                files[0].content = '';
+                switchFile(files[0].id);
+                closeContextMenu();
+                return;
+            }
+            
+            files = files.filter(f => f.id !== targetContextId);
+            if (currentFileId === targetContextId) {
+                switchFile(files[0].id);
+            } else {
+                renderFiles();
+            }
+            closeContextMenu();
+        }
+
+        function closeContextMenu() {
+            document.getElementById('fileContextMenu').style.display = 'none';
+        }
+
+        function toggleCustomMenu(menuId, event) {
+            event.stopPropagation();
+            closeContextMenu();
+            const menu = document.getElementById(menuId);
+            const isShowing = menu.classList.contains('show');
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            if (!isShowing) menu.classList.add('show');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            }
+            if (!e.target.closest('#fileContextMenu') && !e.target.closest('.file-item')) {
+                closeContextMenu();
+            }
+        });
+
+        function selectColor(val) {
+            document.body.classList.remove('purple', 'blue', 'green');
+            document.body.classList.add(val);
+            updateColorLabel();
+            document.getElementById('colorMenu').classList.remove('show');
+        }
+
+        function updateColorLabel() {
+            const activeColor = document.body.classList.contains('blue') ? 'blue' :
+                                document.body.classList.contains('green') ? 'green' : 'purple';
+            let imgSrc = '';
+            if(activeColor === 'purple') imgSrc = 'https://raw.githubusercontent.com/wlpne/webedit/main/PurpleMY.png';
+            if(activeColor === 'blue') imgSrc = 'https://raw.githubusercontent.com/wlpne/webedit/main/BlueMY.png';
+            if(activeColor === 'green') imgSrc = 'https://raw.githubusercontent.com/wlpne/webedit/main/GreenMY.png';
+            
+            document.getElementById('colorLabel').innerHTML = `<img src="${imgSrc}" class="color-icon" alt="${activeColor}">`;
+        }
+
+        function selectLang(val) {
+            currentLang = val;
+            document.getElementById('langLabel').innerHTML = `<img src="${langData[val].flag}" class="flag-icon" alt="${val.toUpperCase()}">`;
+            document.getElementById('editTab').textContent = langData[val].edit;
+            document.getElementById('previewTab').textContent = langData[val].prev;
+            document.getElementById('drawerTitle').textContent = langData[val].files;
+            editor.placeholder = langData[val].placeholder;
+            
+            document.getElementById('langMenu').classList.remove('show');
+        }
+        
+        function switchView(mode) {
+            document.getElementById('editTab').classList.toggle('active', mode === 'edit');
+            document.getElementById('previewTab').classList.toggle('active', mode === 'preview');
+            
+            if (mode === 'edit') {
+                editor.style.display = 'block';
+                preview.style.display = 'none';
+            } else {
+                editor.style.display = 'none';
+                preview.style.display = 'block';
+                preview.innerHTML = marked.parse(editor.value);
+            }
+        }
+
+        function insert(prefix, suffix) {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const text = editor.value;
+            editor.value = text.substring(0, start) + prefix + text.substring(start, end) + suffix + text.substring(end);
+            editor.focus();
+            editor.selectionStart = start + prefix.length;
+            editor.selectionEnd = end + prefix.length;
+            const file = files.find(f => f.id === currentFileId);
+            if (file) file.content = editor.value;
+        }
+
+        function insertNumberedList() {
+            insert('1. ', '');
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('saveMenu');
+            menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function toggleMode() {
+            document.body.classList.toggle('light');
+            document.body.classList.toggle('dark');
+            const logo = document.getElementById('logoImg');
+            const modeIcon = document.getElementById('modeIcon');
+            
+            if(document.body.classList.contains('light')) {
+                 logo.src = 'WebEditLight.png';
+                 modeIcon.innerText = 'dark_mode'; // Switch to dark mode icon (moon)
+            } else {
+                 logo.src = 'WebEditDark.png';
+                 modeIcon.innerText = 'light_mode'; // Switch to light mode icon (sun)
+            }
+        }
+
+        function saveFile(type) {
+            const file = files.find(f => f.id === currentFileId);
+            const blob = new Blob([file.content], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${file.name}.${type}`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toggleMenu();
+        }
+    </script>
+</body>
+</html>
