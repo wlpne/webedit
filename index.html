@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebEdit</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Code&display=swap');
+        
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+        /* Purple Theme (Default) */
+        body.light.purple { --bg: #FEF7FF; --on-bg: #250E44; --surface: #F3EDF7; --primary: #6A538C; --on-primary: #FFFFFF; --sec-container: #D6BBFB; --on-sec-container: #250E44; }
+        body.dark.purple { --bg: #141218; --on-bg: #EDDCFF; --surface: #211F26; --primary: #D6BBFB; --on-primary: #250E44; --sec-container: #523C73; --on-sec-container: #F8EDFF; }
+        
+        /* Blue Theme */
+        body.light.blue { --bg: #FDFBFF; --on-bg: #1A1C1E; --surface: #DFE2EB; --primary: #0061A4; --on-primary: #FFFFFF; --sec-container: #D1E4FF; --on-sec-container: #001D36; }
+        body.dark.blue { --bg: #1A1C1E; --on-bg: #E2E2E6; --surface: #43474E; --primary: #9ECAFF; --on-primary: #003258; --sec-container: #00497D; --on-sec-container: #D1E4FF; }
+
+        /* Green Theme */
+        body.light.green { --bg: #FCFDF6; --on-bg: #1A1C19; --surface: #DFE4D8; --primary: #386A20; --on-primary: #FFFFFF; --sec-container: #B8F397; --on-sec-container: #042100; }
+        body.dark.green { --bg: #1A1C19; --on-bg: #E2E3DD; --surface: #43483E; --primary: #9CD67D; --on-primary: #0C3800; --sec-container: #205107; --on-sec-container: #B8F397; }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Google Sans', sans-serif; background-color: var(--bg); color: var(--on-bg); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; transition: 0.3s; }
+
+        .top-app-bar { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .logo-link img { height: 32px; display: block; }
+        .controls-right { display: flex; gap: 8px; align-items: center; }
+        .controls-left { display: flex; gap: 12px; align-items: center; }
+        
+        .action-btn { background: var(--surface); border: none; padding: 8px; border-radius: 12px; cursor: pointer; color: var(--on-bg); display: flex; align-items: center; }
+        
+        /* Custom MD3 Dropdowns */
+        .custom-dropdown { position: relative; display: inline-block; }
+        .dropdown-trigger { background: var(--surface); color: var(--on-bg); border: none; padding: 8px 8px 8px 12px; border-radius: 12px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 2px; font-family: inherit; font-weight: 500; }
+        .dropdown-menu { position: absolute; top: calc(100% + 4px); right: 0; background: var(--surface); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; flex-direction: column; min-width: 120px; z-index: 100; overflow: hidden; padding: 8px 0; }
+        .dropdown-menu.show { display: flex; }
+        .dropdown-item { background: transparent; color: var(--on-bg); border: none; padding: 10px 16px; text-align: left; cursor: pointer; font-size: 0.85rem; font-family: inherit; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+        .dropdown-item:hover, .dropdown-item:active { background: var(--sec-container); color: var(--on-sec-container); }
+        .flag-icon { width: 20px; height: 20px; border-radius: 50%; display: block; object-fit: cover; }
+
+        /* Navigation Drawer */
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 998; display: none; opacity: 0; transition: opacity 0.3s; }
+        .drawer-overlay.show { display: block; opacity: 1; }
+        .drawer { position: fixed; top: 0; left: -320px; width: 300px; max-width: 85vw; height: 100dvh; background: var(--bg); z-index: 999; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; border-radius: 0 16px 16px 0; box-shadow: 2px 0 12px rgba(0,0,0,0.2); }
+        .drawer.show { left: 0; }
+        .drawer-header { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--surface); }
+        .drawer-title { font-weight: 500; font-size: 1.1rem; color: var(--on-bg); }
+        .file-list { flex: 1; overflow-y: auto; padding: 12px 8px; display: flex; flex-direction: column; gap: 4px; }
+        .file-item { padding: 12px 16px; border-radius: 28px; cursor: pointer; user-select: none; font-weight: 500; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--on-bg); display: flex; align-items: center; gap: 12px; }
+        .file-item .material-symbols-outlined { font-size: 20px; }
+        .file-item:hover { background: var(--surface); }
+        .file-item.active { background: var(--sec-container); color: var(--on-sec-container); }
+
+        /* Context Menu */
+        .context-menu { position: fixed; background: var(--surface); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; flex-direction: column; min-width: 180px; z-index: 1001; padding: 8px 0; }
+        .context-item { background: transparent; color: var(--on-bg); border: none; padding: 12px 16px; text-align: left; cursor: pointer; font-size: 0.9rem; font-family: inherit; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+        .context-item:hover { background: var(--sec-container); color: var(--on-sec-container); }
+        .context-item.delete { color: #CF6679; }
+        body.light .context-item.delete { color: #B3261E; }
+
+        .view-tabs { display: flex; margin: 0 16px 8px 16px; background-color: var(--surface); border-radius: 16px; overflow: hidden; }
+        .tab-btn { flex: 1; background: none; border: none; color: var(--on-bg); padding: 10px; font-weight: 500; cursor: pointer; }
+        .tab-btn.active { background-color: var(--sec-container); color: var(--on-sec-container); }
+
+        .editor-container { flex: 1; display: flex; position: relative; overflow: hidden; }
+        textarea { width: 100%; height: 100%; background: transparent; border: none; color: var(--on-bg); padding: 16px; font-family: 'Google Sans Code', monospace; resize: none; outline: none; }
+        .preview-pane { display: none; width: 100%; height: 100%; padding: 16px; overflow-y: auto; }
+
+        .toolbar { padding: 8px; display: flex; gap: 8px; justify-content: center; background: var(--surface); }
+        .md-btn { background: var(--sec-container); color: var(--on-sec-container); border: none; padding: 8px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+
+        .fab { position: fixed; bottom: 24px; right: 24px; background: var(--primary); color: var(--on-primary); width: 56px; height: 56px; border-radius: 16px; border: none; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .menu { position: fixed; bottom: 90px; right: 24px; background: var(--surface); padding: 8px; border-radius: 20px; display: none; flex-direction: column; gap: 8px; z-index: 10; }
+        .menu-item { background: var(--sec-container); color: var(--on-sec-container); border: none; padding: 12px 24px; border-radius: 16px; cursor: pointer; text-align: left; }
+    </style>
+</head>
+<body class="dark purple">
+
+    <!-- Drawer Overlay -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
+
+    <!-- Navigation Drawer -->
+    <div class="drawer" id="navDrawer">
+        <div class="drawer-header">
+            <button class="action-btn" onclick="toggleDrawer()"><span class="material-symbols-outlined">menu</span></button>
+            <div class="drawer-title" id="drawerTitle">Files</div>
+            <button class="action-btn" onclick="createNewFile()"><span class="material-symbols-outlined">add</span></button>
+        </div>
+        <div class="file-list" id="fileList">
+            <!-- Files injected here -->
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="fileContextMenu">
+        <button class="context-item" onclick="renameFile()"><span class="material-symbols-outlined">edit</span> Rename</button>
+        <button class="context-item" onclick="moveFileTop()"><span class="material-symbols-outlined">vertical_align_top</span> Move on Top</button>
+        <button class="context-item delete" onclick="deleteFile()"><span class="material-symbols-outlined">delete</span> Delete</button>
+    </div>
+
+    <div class="top-app-bar">
+        <div class="controls-left">
+            <button class="action-btn" onclick="toggleDrawer()"><span class="material-symbols-outlined">menu</span></button>
+            <a href="https://wlpne.github.io/webedit" class="logo-link"><img id="logoImg" src="WebEditDark.png" alt="WebEdit"></a>
+        </div>
+        <div class="controls-right">
+            
+            <div class="custom-dropdown">
+                <button class="dropdown-trigger" onclick="toggleCustomMenu('colorMenu', event)">
+                    <span id="colorLabel">Purple</span>
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_drop_down</span>
+                </button>
+                <div class="dropdown-menu" id="colorMenu">
+                    <button class="dropdown-item" onclick="selectColor('purple', 'Purple')">Purple</button>
+                    <button class="dropdown-item" onclick="selectColor('blue', 'Blue')">Blue</button>
+                    <button class="dropdown-item" onclick="selectColor('green', 'Green')">Green</button>
+                </div>
+            </div>
+
+            <div class="custom-dropdown">
+                <button class="dropdown-trigger" onclick="toggleCustomMenu('langMenu', event)">
+                    <span id="langLabel"><img src="https://hatscripts.github.io/circle-flags/flags/gb.svg" class="flag-icon" alt="EN"></span>
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_drop_down</span>
+                </button>
+                <div class="dropdown-menu" id="langMenu">
+                    <button class="dropdown-item" onclick="selectLang('en')">
+                        <img src="https://hatscripts.github.io/circle-flags/flags/gb.svg" class="flag-icon" alt="EN"> EN
+                    </button>
+                    <button class="dropdown-item" onclick="selectLang('ru')">
+                        <img src="https://hatscripts.github.io/circle-flags/flags/ru.svg" class="flag-icon" alt="RU"> RU
+                    </button>
+                </div>
+            </div>
+
+            <button class="action-btn" onclick="toggleMode()"><span class="material-symbols-outlined">light_mode</span></button>
+        </div>
+    </div>
+
+    <div class="view-tabs">
+        <button class="tab-btn active" id="editTab" onclick="switchView('edit')">Editor</button>
+        <button class="tab-btn" id="previewTab" onclick="switchView('preview')">Preview</button>
+    </div>
+
+    <div class="editor-container">
+        <textarea id="editor" placeholder="Start typing..."></textarea>
+        <div id="preview" class="preview-pane"></div>
+    </div>
+
+    <div class="toolbar">
+        <button class="md-btn" onclick="insert('**', '**')"><span class="material-symbols-outlined">format_bold</span></button>
+        <button class="md-btn" onclick="insert('*', '*')"><span class="material-symbols-outlined">format_italic</span></button>
+        <button class="md-btn" onclick="insert('(', ')[]')"><span class="material-symbols-outlined">link</span></button>
+        <button class="md-btn" onclick="insertNumberedList()"><span class="material-symbols-outlined">format_list_numbered</span></button>
+    </div>
+
+    <button class="fab" onclick="toggleMenu()"><span class="material-symbols-outlined">save</span></button>
+    <div class="menu" id="saveMenu">
+        <button class="menu-item" onclick="saveFile('txt')">Save as TXT</button>
+        <button class="menu-item" onclick="saveFile('md')">Save as MD</button>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor'), preview = document.getElementById('preview');
+        const langData = {
+            en: { edit: "Editor", prev: "Preview", placeholder: "Start typing...", files: "Files", flag: "https://hatscripts.github.io/circle-flags/flags/gb.svg" },
+            ru: { edit: "Редактор", prev: "Предпросмотр", placeholder: "Начните вводить...", files: "Файлы", flag: "https://hatscripts.github.io/circle-flags/flags/ru.svg" }
+        };
+
+        // --- File System Logic ---
+        let files = [{ id: Date.now(), name: 'Unnamed', content: '' }];
+        let currentFileId = files[0].id;
+        let targetContextId = null;
+
+        function getUniqueName() {
+            let baseName = "Unnamed";
+            let name = baseName;
+            let counter = 1;
+            while (files.some(f => f.name === name)) {
+                name = `${baseName} ${counter}`;
+                counter++;
+            }
+            return name;
+        }
+
+        function createNewFile() {
+            const newFile = { id: Date.now(), name: getUniqueName(), content: '' };
+            files.unshift(newFile);
+            switchFile(newFile.id);
+        }
+
+        function switchFile(id) {
+            currentFileId = id;
+            const file = files.find(f => f.id === id);
+            editor.value = file.content;
+            if (document.getElementById('previewTab').classList.contains('active')) {
+                preview.innerHTML = marked.parse(editor.value);
+            }
+            renderFiles();
+        }
+
+        function renderFiles() {
+            const list = document.getElementById('fileList');
+            list.innerHTML = '';
+            files.forEach(f => {
+                const item = document.createElement('div');
+                item.className = `file-item ${f.id === currentFileId ? 'active' : ''}`;
+                item.innerHTML = `<span class="material-symbols-outlined">description</span> ${f.name}`;
+                
+                item.onclick = () => switchFile(f.id);
+
+                // Desktop Right Click
+                item.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    showContextMenu(e, f.id);
+                };
+
+                // Mobile Long Press
+                let pressTimer;
+                item.ontouchstart = (e) => {
+                    pressTimer = setTimeout(() => {
+                        const touch = e.touches[0];
+                        showContextMenu({ clientX: touch.clientX, clientY: touch.clientY }, f.id);
+                    }, 600);
+                };
+                item.ontouchend = () => clearTimeout(pressTimer);
+                item.ontouchmove = () => clearTimeout(pressTimer);
+
+                list.appendChild(item);
+            });
+        }
+
+        // Sync editor input to current file in memory
+        editor.addEventListener('input', () => {
+            const file = files.find(f => f.id === currentFileId);
+            if (file) file.content = editor.value;
+        });
+
+        // Initialize file system
+        renderFiles();
+
+        // --- Drawer Logic ---
+        function toggleDrawer() {
+            const drawer = document.getElementById('navDrawer');
+            const overlay = document.getElementById('drawerOverlay');
+            drawer.classList.toggle('show');
+            if (drawer.classList.contains('show')) {
+                overlay.style.display = 'block';
+                setTimeout(() => overlay.classList.add('show'), 10);
+            } else {
+                overlay.classList.remove('show');
+                setTimeout(() => overlay.style.display = 'none', 300);
+            }
+        }
+
+        // --- Context Menu Logic ---
+        function showContextMenu(e, id) {
+            targetContextId = id;
+            const menu = document.getElementById('fileContextMenu');
+            menu.style.display = 'flex';
+            
+            // Adjust to prevent menu from going off screen
+            let x = e.clientX;
+            let y = e.clientY;
+            if (x + 180 > window.innerWidth) x = window.innerWidth - 190;
+            if (y + 150 > window.innerHeight) y = window.innerHeight - 160;
+            
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+        }
+
+        function renameFile() {
+            const file = files.find(f => f.id === targetContextId);
+            const newName = prompt("Enter new name:", file.name);
+            if (newName && newName.trim() !== '') {
+                file.name = newName.trim();
+                renderFiles();
+            }
+            closeContextMenu();
+        }
+
+        function moveFileTop() {
+            const idx = files.findIndex(f => f.id === targetContextId);
+            if (idx > 0) {
+                const [file] = files.splice(idx, 1);
+                files.unshift(file);
+                renderFiles();
+            }
+            closeContextMenu();
+        }
+
+        function deleteFile() {
+            if (files.length === 1) {
+                files[0].name = getUniqueName();
+                files[0].content = '';
+                switchFile(files[0].id);
+                closeContextMenu();
+                return;
+            }
+            
+            files = files.filter(f => f.id !== targetContextId);
+            if (currentFileId === targetContextId) {
+                switchFile(files[0].id);
+            } else {
+                renderFiles();
+            }
+            closeContextMenu();
+        }
+
+        function closeContextMenu() {
+            document.getElementById('fileContextMenu').style.display = 'none';
+        }
+
+        // --- Dropdown Logic ---
+        function toggleCustomMenu(menuId, event) {
+            event.stopPropagation();
+            closeContextMenu();
+            const menu = document.getElementById(menuId);
+            const isShowing = menu.classList.contains('show');
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            if (!isShowing) menu.classList.add('show');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            }
+            if (!e.target.closest('#fileContextMenu') && !e.target.closest('.file-item')) {
+                closeContextMenu();
+            }
+        });
+
+        function selectColor(val, label) {
+            document.getElementById('colorLabel').textContent = label;
+            document.body.classList.remove('purple', 'blue', 'green');
+            document.body.classList.add(val);
+            document.getElementById('colorMenu').classList.remove('show');
+        }
+
+        function selectLang(val) {
+            document.getElementById('langLabel').innerHTML = `<img src="${langData[val].flag}" class="flag-icon" alt="${val.toUpperCase()}">`;
+            document.getElementById('editTab').textContent = langData[val].edit;
+            document.getElementById('previewTab').textContent = langData[val].prev;
+            document.getElementById('drawerTitle').textContent = langData[val].files;
+            editor.placeholder = langData[val].placeholder;
+            document.getElementById('langMenu').classList.remove('show');
+        }
+        
+        // --- Editor Functions ---
+        function switchView(mode) {
+            document.getElementById('editTab').classList.toggle('active', mode === 'edit');
+            document.getElementById('previewTab').classList.toggle('active', mode === 'preview');
+            if (mode === 'preview') { preview.innerHTML = marked.parse(editor.value); editor.style.display = 'none'; preview.style.display = 'block'; }
+            else { editor.style.display = 'block'; preview.style.display = 'none'; }
+        }
+
+        function insert(pre, post) {
+            const s = editor.selectionStart, e = editor.selectionEnd, v = editor.value;
+            editor.value = v.substring(0, s) + pre + v.substring(s, e) + post + v.substring(e);
+            const file = files.find(f => f.id === currentFileId);
+            if (file) file.content = editor.value;
+            editor.focus();
+        }
+
+        function insertNumberedList() {
+            const textBefore = editor.value.substring(0, editor.selectionStart);
+            const matches = textBefore.match(/^\d+(?=\.\s)/gm);
+            const nextNum = matches ? parseInt(matches[matches.length - 1]) + 1 : 1;
+            insert('\n' + nextNum + '. ', '');
+        }
+
+        editor.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const cursorPosition = editor.selectionStart;
+                const textBeforeCursor = editor.value.substring(0, cursorPosition);
+                const lines = textBeforeCursor.split('\n');
+                const currentLine = lines[lines.length - 1];
+                
+                const match = currentLine.match(/^(\s*)(\d+)\.\s(.*)/);
+                
+                if (match) {
+                    e.preventDefault();
+                    const spaces = match[1];
+                    const num = parseInt(match[2]);
+                    const content = match[3];
+                    
+                    if (content.trim() === '') {
+                        const val = editor.value;
+                        editor.value = val.substring(0, cursorPosition - currentLine.length) + '\n' + val.substring(editor.selectionEnd);
+                        editor.selectionStart = editor.selectionEnd = cursorPosition - currentLine.length + 1;
+                    } else {
+                        const insertText = '\n' + spaces + (num + 1) + '. ';
+                        const val = editor.value;
+                        editor.value = val.substring(0, cursorPosition) + insertText + val.substring(editor.selectionEnd);
+                        editor.selectionStart = editor.selectionEnd = cursorPosition + insertText.length;
+                    }
+                    
+                    const file = files.find(f => f.id === currentFileId);
+                    if (file) file.content = editor.value;
+                }
+            }
+        });
+
+        function toggleMenu() { const m = document.getElementById('saveMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+
+        function saveFile(ext) {
+            const currentFile = files.find(f => f.id === currentFileId);
+            const fileName = `${currentFile.name}.${ext}`;
+            const blob = new Blob([editor.value], {type: 'text/plain'});
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = fileName; 
+            a.click();
+            document.getElementById('saveMenu').style.display = 'none';
+        }
+
+        function toggleMode() { 
+            document.body.classList.toggle('dark'); 
+            document.body.classList.toggle('light');
+            document.getElementById('logoImg').src = document.body.classList.contains('dark') ? 'WebEditDark.png' : 'WebEditLight.png';
+        }
+    </script>
+</body>
+</html>
